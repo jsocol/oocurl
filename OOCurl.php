@@ -12,10 +12,13 @@
  *
  * For example, if you wanted to include the headers in the output,
  * the old way would be
+ * 
  * <code>
  * curl_setopt($ch, CURLOPT_HEADER, true);
  * </code>
+ * 
  * But with this object, it's simply
+ * 
  * <code>
  * $ch->header = true;
  * </code>
@@ -38,13 +41,11 @@
  *      - Add support for curl_setopt_array() via {@link __set()}
  *      - Consider adding $curlopt_default array to implement
  *        {@link __unset()} for real.
- *
- * 
  * 
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
  * @version 0.1.0
- * @copyright 2008 James Socol
+ * @copyright Copyright (c) 2008, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
 
@@ -70,7 +71,7 @@ THE SOFTWARE.
 */
  
 /**
- * Curl object
+ * Curl connection object 
  *
  * Provides an Object-Oriented interface to the PHP cURL
  * functions and a clean way to replace curl_setopt().
@@ -80,7 +81,8 @@ THE SOFTWARE.
 class Curl
 {
 	/**
-	 * Store the curl_init resource.
+	 * Store the curl_init() resource.
+	 * @var resource
 	 */
 	protected $ch = NULL;
 
@@ -89,14 +91,23 @@ class Curl
 	 * 
 	 * Do not access directly. Access through {@link __get()} 
 	 * and {@link __set()}.
+	 * 
+	 * @var array
 	 */
 	protected $curlopt = array();
+	
+	/**
+	 * The version of the OOCurl library.
+	 * @var string
+	 */
+	const VERSION = '0.1.0';
 	
 	/**
 	 * Create the new Curl object, with the
 	 * optional URL parameter.
 	 *
-	 * @param string $url optional
+	 * @param string $url The URL to open (optional)
+	 * @return Curl A new Curl object.
 	 * @throws ErrorException
 	 */
 	public function __construct ( $url = NULL )
@@ -111,6 +122,9 @@ class Curl
 		// Set some default options
 		$this->url = $url;
 		$this->returntransfer = true;
+		
+		// Applications can override this User Agent value
+		$this->useragent = 'OOCurl '.self::VERSION;
 		
 		// Return $this for chaining
 		return $this;
@@ -147,16 +161,19 @@ class Curl
 	}
 	
 	/**
-	 * Overloaded set.
+	 * Magic property setter.
 	 *
 	 * A sneaky way to access curl_setopt(). If the
 	 * constant CURLOPT_$opt exists, then we try to set
 	 * the option using curl_setopt() and return its
 	 * success. If it doesn't exist, just return false.
+	 * 
+	 * Also stores the variable in {@link $curlopt} so
+	 * its value can be retrieved with {@link __get()}.
 	 *
-	 * @param string $opt
-	 * @param mixed $value
-	 * @return bool
+	 * @param string $opt The second half of the CURLOPT_* constant, not case sensitive
+	 * @param mixed $value 
+	 * @return void
 	 */
 	public function __set ( $opt, $value )
 	{
@@ -166,24 +183,21 @@ class Curl
 							constant($const),
 							$value)) {
 				$this->curlopt[$const] = $value;
-				return true;
 			}
-		} 
-		
-		return false;
+		}
 	}
 	
 	/**
-	 * Overloaded get.
+	 * Magic property getter.
 	 * 
 	 * When options are set with {@link __set()}, they
-	 * are also stored in {@link $curlopts} so that we
+	 * are also stored in {@link $curlopt} so that we
 	 * can always find out what the options are now.
 	 * 
 	 * The default cURL functions lack this ability.
 	 *
-	 * @param string $opt
-	 * @return mixed
+	 * @param string $opt The second half of the CURLOPT_* constant, not case sensitive
+	 * @return mixed The set value of CURLOPT_<var>$opt</var>, or NULL if it hasn't been set (ie: is still default).
 	 */
 	public function __get ( $opt )
 	{
@@ -191,16 +205,16 @@ class Curl
 	}
 	
 	/**
-	 * Overloaded isset.
+	 * Magic property isset()
 	 *
 	 * Can tell if a CURLOPT_* value was set by using
 	 * <code>
-	 * isset($curl-><var>option</var>)
+	 * isset($curl->*)
 	 * </code>
 	 *
 	 * The default cURL functions lack this ability.
 	 *
-	 * @param string $opt
+	 * @param string $opt The second half of the CURLOPT_* constant, not case sensitive
 	 * @return bool
 	 */
 	public function __isset ( $opt )
@@ -209,7 +223,7 @@ class Curl
 	}
 	
 	/**
-	 * Overloaded unset
+	 * Magic property unset()
 	 *
 	 * Unfortunately, there is no way, short of writing an
 	 * extremely long, but mostly NULL-filled array, to
@@ -220,14 +234,14 @@ class Curl
 	 *
 	 * @todo Consider implementing an array of all the CURLOPT_*
 	 *       constants and their default values.
-	 * @param string $opt
+	 * @param string $opt The second half of the CURLOPT_* constant, not case sensitive
+	 * @return void
 	 */
 	public function __unset ( $opt )
 	{
 		// Since we really can't reset a CURLOPT_* to its
 		// default value without knowing the default value,
-		// just return false.
-		return false;
+		// just do nothing.
 	}
 }
 
