@@ -41,7 +41,7 @@ THE SOFTWARE.
  *
  * Instead of requiring a setopt() function and the CURLOPT_*
  * constants, which are cumbersome and ugly at best, this object
- * implements {@link curl_setopt()} through overloaded getter and setter
+ * implements curl_setopt() through overloaded getter and setter
  * methods.
  *
  * For example, if you wanted to include the headers in the output,
@@ -57,7 +57,7 @@ THE SOFTWARE.
  * $ch->header = true;
  * </code>
  * 
- * <strong>NB:</strong> Since, in my experience, the vast majority 
+ * <b>NB:</b> Since, in my experience, the vast majority 
  * of cURL scripts set CURLOPT_RETURNTRANSFER to true, the {@link Curl}
  * class sets it by default. If you do not want CURLOPT_RETURNTRANSFER, 
  * you'll need to do this:
@@ -71,9 +71,9 @@ THE SOFTWARE.
  *      - Adding support for parallel processing somehow.
  *        Maybe a CurlParallel class? Use Visitor to get
  *        around protected variables?
- *      - Add support for {@link curl_getinfo()}.
+ *      - Add support for curl_getinfo().
  *      - Add support for CURLINFO_* constants.
- *      - Add support for {@link curl_setopt_array()} (via {@link __set()}?)
+ *      - Add support for curl_setopt_array() (via {@link __set()}?)
  *      - Consider adding $curlopt_default array to implement
  *        {@link __unset()} for real.
  *
@@ -86,7 +86,7 @@ THE SOFTWARE.
 class Curl
 {
 	/**
-	 * Store the {@link curl_init()} resource.
+	 * Store the curl_init() resource.
 	 * @var resource
 	 */
 	protected $ch = NULL;
@@ -102,6 +102,14 @@ class Curl
 	protected $curlopt = array();
 	
 	/**
+	 * Flag the Curl object as linked to a {@link CurlParallel}
+	 * object.
+	 * 
+	 * @var bool
+	 */
+	protected $multi = false;
+	
+	/**
 	 * The version of the OOCurl library.
 	 * @var string
 	 */
@@ -113,7 +121,7 @@ class Curl
 	 *
 	 * @param string $url The URL to open (optional)
 	 * @return Curl A new Curl object.
-	 * @throws {@link ErrorException}
+	 * @throws ErrorException
 	 */
 	public function __construct ( $url = NULL )
 	{
@@ -144,10 +152,10 @@ class Curl
 	}
 	
 	/**
-	 * If the session was closed with close(), it can be reopened.
+	 * If the session was closed with {@link Curl::close()}, it can be reopened.
 	 * 
-	 * This does not re-execute {@link __construct()}, but will reset all
-	 * the values in {@link $curlopts}.
+	 * This does not re-execute {@link Curl::__construct()}, but will reset all
+	 * the values in {@link $curlopt}.
 	 * 
 	 * @param string $url The URL to open (optional)
 	 * @return bool|Curl
@@ -183,6 +191,22 @@ class Curl
 	}
 	
 	/**
+	 * If the Curl object was added to a {@link CurlParallel}
+	 * object, then you can use this function to get the
+	 * returned data (whatever that is).
+	 * 
+	 * @see $multi
+	 * @return mixed
+	 */
+	public function getcontent ()
+	{
+		if ( $this->multi )
+			return curl_multi_getcontent($this->ch);
+		else
+			return NULL;
+	}
+	
+	/**
 	 * Close the cURL session and free the resource.
 	 */
 	public function close ()
@@ -213,7 +237,7 @@ class Curl
 	/**
 	 * Magic property setter.
 	 *
-	 * A sneaky way to access {@link curl_setopt()}. If the
+	 * A sneaky way to access curl_setopt(). If the
 	 * constant CURLOPT_$opt exists, then we try to set
 	 * the option using curl_setopt() and return its
 	 * success. If it doesn't exist, just return false.
@@ -293,6 +317,204 @@ class Curl
 		// default value without knowing the default value,
 		// just do nothing.
 	}
+	
+	/**
+	 * Grants access to {@link Curl::$ch $ch} to a {@link CurlParallel} object.
+	 * 
+	 * @param CurlParallel $mh The CurlParallel object that needs {@link Curl::$ch $ch}.
+	 */
+	public function grant ( CurlParallel $mh )
+	{
+		$mh->accept($this->ch);
+		$this->multi = true;
+	}
+	
+	/**
+	 * Removes access to {@link Curl::$ch $ch} from a {@link CurlParallel} object.
+	 * 
+	 * @param CurlParallel $mh The CurlParallel object that no longer needs {@link Curl::$ch $ch}.
+	 */
+	public function revoke ( CurlParallel $mh )
+	{
+		$mh->release($this->ch);
+		$this->multi = false;
+	}
 }
 
+/**
+ * Implements parallel-processing for cURL requests.
+ * 
+ * The PHP cURL library allows two or more requests to run in
+ * parallel (at the same time). If you have multiple requests
+ * that may have high latency but can then be processed quickly
+ * in series (one after the other), then running them at the
+ * same time may save time, overall.
+ * 
+ * You must create individual {@link Curl} objects first, add them to
+ * the CurlParallel object, execute the CurlParallel object,
+ * then get the data from the individual {@link Curl} objects. (Yes,
+ * it's annoying, but it's limited by the PHP cURL library.)
+ * 
+ * For example:
+ * 
+ * <code>
+ * $a = new Curl("http://www.yahoo.com/");
+ * $b = new Curl("http://www.microsoft.com/");
+ * 
+ * $m = new CurlParallel($a, $b);
+ * 
+ * $m->exec(); // Now we play the waiting game.
+ * 
+ * printf("Yahoo is %n characters.\n", strlen($a->getcontent()));
+ * printf("Microsoft is %n characters.\n", strlen($a->getcontent()));
+ * </code>
+ * 
+ * You can add any number of {@link Curl} objects to the 
+ * CurlParallel object's constructor (including 0), or you
+ * can add with the {@link add()} method:
+ * 
+ * <code>
+ * $m = new CurlParallel;
+ * 
+ * $a = new Curl("http://www.yahoo.com/");
+ * $b = new Curl("http://www.microsoft.com/");
+ * 
+ * $m->add($a);
+ * $m->add($b);
+ * 
+ * $m->exec(); // Now we play the waiting game.
+ * 
+ * printf("Yahoo is %n characters.\n", strlen($a->getcontent()));
+ * printf("Microsoft is %n characters.\n", strlen($a->getcontent()));
+ * </code>
+ *
+ * @todo Still needs...
+ *       - exec() function.
+ * @package OOCurl
+ * @author James Socol <me@jamessocol.com>
+ * @version 0.1.0
+ * @since 0.1.2
+ * @copyright Copyright (c) 2008, James Socol
+ * @license http://www.opensource.org/licenses/mit-license.php
+ */
+class CurlParallel
+{
+	/**
+	 * Store the cURL master resource.
+	 * @var resource
+	 */
+	protected $mh;
+	
+	/**
+	 * Store the resource handles that were
+	 * added to the session.
+	 * @var array
+	 */
+	protected $ch = array();
+	
+	/**
+	 * Store the version number of this class.
+	 */
+	const VERSION = '0.1.0';
+	
+	/**
+	 * Initialize the multisession handler.
+	 * 
+	 * @uses add()
+	 * @param Curl $curl,... {@link Curl} objects to add to the Parallelizer.
+	 * @return CurlParallel
+	 */
+	public function __construct ()
+	{
+		$this->mh = curl_multi_init();
+		
+		foreach ( func_get_args() as $ch ) {
+			$this->add($ch);
+		}
+		
+		return $this;
+	}
+	
+	/**
+	 * On destruction, frees resources.
+	 */
+	public function __destruct ()
+	{
+		$this->close();
+	}
+	
+	/**
+	 * Close the current session and free resources.
+	 */
+	public function close ()
+	{
+		foreach ( $this->ch as $ch ) {
+			curl_multi_remove_handle($this->mh, $ch);
+		}
+		curl_multi_close($this->mh);
+	}
+	
+	/**
+	 * Add a {@link Curl} object to the Parallelizer.
+	 * 
+	 * Will throw a catchable fatal error if passed a non-Curl object.
+	 * 
+	 * @uses Curl::grant()
+	 * @uses CurlParallel::accept()
+	 * @param Curl $ch Curl object.
+	 */
+	public function add ( Curl $ch )
+	{
+		// get the protected resource
+		$ch->grant($this);
+	}
+	
+	/**
+	 * Remove a {@link Curl} object from the Parallelizer.
+	 *
+	 * @param Curl $ch Curl object.
+	 * @uses Curl::revoke()
+	 * @uses CurlParallel::release()
+	 */
+	public function remove ( Curl $ch )
+	{
+		$ch->revoke($this);
+	}
+	
+	/**
+	 * Execute the parallel cURL requests.
+	 */
+	public function exec ()
+	{
+		do {
+			curl_multi_exec($this->mh, $running);
+		} while ($running > 0);
+	}
+	
+	/**
+	 * Accept a resource handle from a {@link Curl} object and
+	 * add it to the master.
+	 * 
+	 * @param resource $ch A resource returned by curl_init().
+	 */
+	public function accept ( $ch )
+	{
+		$this->ch[] = $ch;
+		curl_multi_add_handle($this->mh, $ch);
+	}
+	
+	/**
+	 * Accept a resource handle from a {@link Curl} object and
+	 * remove it from the master.
+	 * 
+	 * @param resource $ch A resource returned by curl_init().
+	 */
+	public function release ( $ch )
+	{
+		if ( false !== $key = array_search($this->ch, $ch) ) {
+			unset($this->ch[$key]);
+			curl_multi_remove_handle($this->mh, $ch);
+		}
+	}
+}
 ?>

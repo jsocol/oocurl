@@ -85,7 +85,33 @@ try {
 	if ( !$response )
 		throw new Exception("I couldn't fetch the response.");
 	
-	printf("Success: %s\n", $response);
+	printf("Single request: Success: %s\n", $response);
+	
+	// Now we'll test the parallel processor
+	
+	/**
+	 * Let's fetch Yahoo
+	 */
+	$y = new Curl("http://www.yahoo.com/");
+	
+	/**
+	 * And let's grab Google, too
+	 */
+	$g = new Curl("http://www.google.com/");
+	
+	/**
+	 * Create a CurlParallel object
+	 */
+	$m = new CurlParallel($y, $g);
+	
+	$m->exec();
+	
+	if ( strlen($g->getcontent()) && strlen($y->getcontent()) ) {
+		printf("Parallel requests: Success!");
+	} else {
+		throw new Exception("Could not run in parallel.");
+	}
+	
 
 } catch (Exception $e) {
 	// There was a problem! What happened?
