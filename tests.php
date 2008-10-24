@@ -74,7 +74,7 @@ try {
 	/**
 	 * Set a custom header for the test.
 	 */
-	$curl->httpheader = array('X-OOCurl-Version'=>Curl::VERSION);
+	$curl->httpheader = array('X-OOCurl-Version: ' . Curl::VERSION);
 	
 	/**
 	 * Execute the HTTP query

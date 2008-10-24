@@ -5,46 +5,9 @@
  * Provides an Object-Oriented interface to the PHP cURL
  * functions and clean up some of the curl_setopt() calls.
  *
- * Instead of requiring a setopt() function and the CURLOPT_*
- * constants, which are cumbersome and ugly at best, this object
- * implements curl_setopt() through overloaded getter and setter
- * methods.
- *
- * For example, if you wanted to include the headers in the output,
- * the old way would be
- * 
- * <code>
- * curl_setopt($ch, CURLOPT_HEADER, true);
- * </code>
- * 
- * But with this object, it's simply
- * 
- * <code>
- * $ch->header = true;
- * </code>
- * 
- * NB: Since, in my experience, the vast majority if cURL scripts
- * set CURLOPT_RETURNTRANSFER to true, this Class sets it by
- * default. If you do not want CURLOPT_RETURNTRANSFER, you'll need
- * to do this:
- * <code>
- * $c = new Curl;
- * $c->returntransfer = false;
- * </code>
- * 
- * @todo Things to consider...
- *      - Adding support for parallel processing somehow.
- *        Maybe a CurlParallel class? Use Visitor to get
- *        around protected variables?
- *      - Add support for curl_getinfo().
- *      - Add support for CURLINFO_* constants.
- *      - Add support for curl_setopt_array() via {@link __set()}
- *      - Consider adding $curlopt_default array to implement
- *        {@link __unset()} for real.
- * 
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
- * @version 0.1.0
+ * @version 0.1.1
  * @copyright Copyright (c) 2008, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
@@ -76,12 +39,54 @@ THE SOFTWARE.
  * Provides an Object-Oriented interface to the PHP cURL
  * functions and a clean way to replace curl_setopt().
  *
+ * Instead of requiring a setopt() function and the CURLOPT_*
+ * constants, which are cumbersome and ugly at best, this object
+ * implements {@link curl_setopt()} through overloaded getter and setter
+ * methods.
+ *
+ * For example, if you wanted to include the headers in the output,
+ * the old way would be
+ * 
+ * <code>
+ * curl_setopt($ch, CURLOPT_HEADER, true);
+ * </code>
+ * 
+ * But with this object, it's simply
+ * 
+ * <code>
+ * $ch->header = true;
+ * </code>
+ * 
+ * <strong>NB:</strong> Since, in my experience, the vast majority 
+ * of cURL scripts set CURLOPT_RETURNTRANSFER to true, the {@link Curl}
+ * class sets it by default. If you do not want CURLOPT_RETURNTRANSFER, 
+ * you'll need to do this:
+ * 
+ * <code>
+ * $c = new Curl;
+ * $c->returntransfer = false;
+ * </code>
+ * 
+ * @todo Things to consider...
+ *      - Adding support for parallel processing somehow.
+ *        Maybe a CurlParallel class? Use Visitor to get
+ *        around protected variables?
+ *      - Add support for {@link curl_getinfo()}.
+ *      - Add support for CURLINFO_* constants.
+ *      - Add support for {@link curl_setopt_array()} (via {@link __set()}?)
+ *      - Consider adding $curlopt_default array to implement
+ *        {@link __unset()} for real.
+ *
  * @package OOCurl
+ * @author James Socol <me@jamessocol.com>
+ * @version 0.1.1
+ * @copyright Copyright (c) 2008, James Socol
+ * @license http://www.opensource.org/licenses/mit-license.php
  */
 class Curl
 {
 	/**
-	 * Store the curl_init() resource.
+	 * Store the {@link curl_init()} resource.
 	 * @var resource
 	 */
 	protected $ch = NULL;
@@ -89,8 +94,8 @@ class Curl
 	/**
 	 * Store the CURLOPT_* values.
 	 * 
-	 * Do not access directly. Access through {@link __get()} 
-	 * and {@link __set()}.
+	 * Do not access directly. Access is through {@link __get()} 
+	 * and {@link __set()} magic methods.
 	 * 
 	 * @var array
 	 */
@@ -100,15 +105,15 @@ class Curl
 	 * The version of the OOCurl library.
 	 * @var string
 	 */
-	const VERSION = '0.1.0';
+	const VERSION = '0.1.1';
 	
 	/**
-	 * Create the new Curl object, with the
+	 * Create the new {@link Curl} object, with the
 	 * optional URL parameter.
 	 *
 	 * @param string $url The URL to open (optional)
 	 * @return Curl A new Curl object.
-	 * @throws ErrorException
+	 * @throws {@link ErrorException}
 	 */
 	public function __construct ( $url = NULL )
 	{
@@ -131,6 +136,43 @@ class Curl
 	}
 	
 	/**
+	 * When destroying the object, be sure to free resources.
+	 */
+	public function __destruct()
+	{
+		$this->close();
+	}
+	
+	/**
+	 * If the session was closed with close(), it can be reopened.
+	 * 
+	 * This does not re-execute {@link __construct()}, but will reset all
+	 * the values in {@link $curlopts}.
+	 * 
+	 * @param string $url The URL to open (optional)
+	 * @return bool|Curl
+	 */
+	public function init ( $url = NULL )
+	{
+		// If it's still init'ed, return false.
+		if ( $this->ch ) return false;
+		
+		// init a new cURL session
+		$this->ch = curl_init();
+		
+		// reset all the values that were already set
+		foreach ( $this->curlopt as $const => $value ) {
+			curl_setopt($this->ch, constant($const), $value);
+		}
+		
+		// finally if there's a new URL, set that
+		if ( !empty($url) ) $this->url = $url;
+		
+		// return $this for chaining
+		return $this;
+	}
+	
+	/**
 	 * Execute the cURL transfer.
 	 *
 	 * @return mixed
@@ -138,6 +180,14 @@ class Curl
 	public function exec ()
 	{
 		return curl_exec($this->ch);
+	}
+	
+	/**
+	 * Close the cURL session and free the resource.
+	 */
+	public function close ()
+	{
+		curl_close($this->ch);
 	}
 	
 	/**
@@ -163,7 +213,7 @@ class Curl
 	/**
 	 * Magic property setter.
 	 *
-	 * A sneaky way to access curl_setopt(). If the
+	 * A sneaky way to access {@link curl_setopt()}. If the
 	 * constant CURLOPT_$opt exists, then we try to set
 	 * the option using curl_setopt() and return its
 	 * success. If it doesn't exist, just return false.
