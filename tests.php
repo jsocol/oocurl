@@ -84,6 +84,8 @@ try {
 	// If there's no response, there was an error.
 	if ( !$response )
 		throw new Exception("I couldn't fetch the response.");
+	
+	printf("Success: %s\n", $response);
 
 } catch (Exception $e) {
 	// There was a problem! What happened?
