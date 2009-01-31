@@ -86,7 +86,7 @@ try {
 		throw new Exception("I couldn't fetch the response.");
 	
 	printf("Single request: Success: %s\n", $response);
-	
+	printf("I downloaded %n bytes!\n",$curl->info('size_download'));
 	// Now we'll test the parallel processor
 	
 	/**
@@ -106,7 +106,7 @@ try {
 	
 	$m->exec();
 	
-	if ( strlen($g->getcontent()) && strlen($y->getcontent()) ) {
+	if ( strlen($g->fetch()) && strlen($y->fetch()) ) {
 		printf("Parallel requests: Success!");
 	} else {
 		throw new Exception("Could not run in parallel.");

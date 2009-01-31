@@ -7,7 +7,7 @@
  *
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
- * @version 0.1.1
+ * @version 0.2
  * @copyright Copyright (c) 2008, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
@@ -66,16 +66,6 @@ THE SOFTWARE.
  * $c = new Curl;
  * $c->returntransfer = false;
  * </code>
- * 
- * @todo Things to consider...
- *      - Adding support for parallel processing somehow.
- *        Maybe a CurlParallel class? Use Visitor to get
- *        around protected variables?
- *      - Add support for curl_getinfo().
- *      - Add support for CURLINFO_* constants.
- *      - Add support for curl_setopt_array() (via {@link __set()}?)
- *      - Consider adding $curlopt_default array to implement
- *        {@link __unset()} for real.
  *
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
@@ -113,7 +103,7 @@ class Curl
 	 * The version of the OOCurl library.
 	 * @var string
 	 */
-	const VERSION = '0.1.1';
+	const VERSION = '0.2';
 	
 	/**
 	 * Create the new {@link Curl} object, with the
@@ -193,17 +183,18 @@ class Curl
 	/**
 	 * If the Curl object was added to a {@link CurlParallel}
 	 * object, then you can use this function to get the
-	 * returned data (whatever that is).
+	 * returned data (whatever that is). Otherwise it's an alias
+	 * for {@link exec()}.
 	 * 
 	 * @see $multi
 	 * @return mixed
 	 */
-	public function getcontent ()
+	public function fetch ()
 	{
 		if ( $this->multi )
 			return curl_multi_getcontent($this->ch);
 		else
-			return NULL;
+			return curl_exec($this->ch);
 	}
 	
 	/**
@@ -232,6 +223,50 @@ class Curl
 	public function errno()
 	{
 		return curl_errno($this->ch);
+	}
+	
+	/**
+	 * Get cURL version information (and adds OOCurl version info)
+	 * 
+	 * @return array
+	 */
+ 	public function version ()
+ 	{
+ 		$version = curl_version();
+ 		
+ 		$version['oocurl_version'] = self::VERSION;
+ 		$version['oocurlparallel_version'] = CurlParallel::VERSION;
+ 		
+ 		return $version;
+ 	}
+	
+	/**
+	 * Get information about this transfer.
+	 * 
+	 * Accepts any of the following as a parameter:
+	 *  - Nothing, and returns an array of all info values
+	 *  - A CURLINFO_* constant, and returns a string
+	 *  - A string of the second half of a CURLINFO_* constant,
+	 *     for example, the string 'effective_url' is equivalent
+	 *     to the CURLINFO_EFFECTIVE_URL constant. Not case 
+	 *     sensitive.
+	 * 
+	 * @param mixed $opt A string or constant (optional).
+	 * @return mixed An array or string.
+	 */
+	public function info ( $opt = false )
+	{
+		if (false === $opt) {
+			return curl_getinfo($this->ch);
+		}
+		
+		if ( is_int($opt) || ctype_digit($opt) ) {
+			return curl_getinfo($opt);
+		}
+		
+		if (constant('CURLINFO_'.strtoupper($opt))) {
+			return curl_getinfo('CURLINFO_'.strtoupper($opt));
+		}
 	}
 	
 	/**
@@ -365,8 +400,8 @@ class Curl
  * 
  * $m->exec(); // Now we play the waiting game.
  * 
- * printf("Yahoo is %n characters.\n", strlen($a->getcontent()));
- * printf("Microsoft is %n characters.\n", strlen($a->getcontent()));
+ * printf("Yahoo is %n characters.\n", strlen($a->fetch()));
+ * printf("Microsoft is %n characters.\n", strlen($a->fetch()));
  * </code>
  * 
  * You can add any number of {@link Curl} objects to the 
@@ -384,8 +419,8 @@ class Curl
  * 
  * $m->exec(); // Now we play the waiting game.
  * 
- * printf("Yahoo is %n characters.\n", strlen($a->getcontent()));
- * printf("Microsoft is %n characters.\n", strlen($a->getcontent()));
+ * printf("Yahoo is %n characters.\n", strlen($a->fetch()));
+ * printf("Microsoft is %n characters.\n", strlen($a->fetch()));
  * </code>
  *
  * @todo Still needs...
