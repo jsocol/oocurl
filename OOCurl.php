@@ -100,10 +100,18 @@ class Curl
 	protected $multi = false;
 	
 	/**
+	 * Store the response. Used with {@link fetch()} and 
+	 * {@link fetch_json()}.
+	 *
+	 * @var string
+	 */
+	protected $response;
+
+	/**
 	 * The version of the OOCurl library.
 	 * @var string
 	 */
-	const VERSION = '0.2';
+	const VERSION = '0.3';
 	
 	/**
 	 * Create the new {@link Curl} object, with the
@@ -183,20 +191,41 @@ class Curl
 	/**
 	 * If the Curl object was added to a {@link CurlParallel}
 	 * object, then you can use this function to get the
-	 * returned data (whatever that is). Otherwise it's an alias
-	 * for {@link exec()}.
+	 * returned data (whatever that is). Otherwise it's similar
+	 * to {@link exec()} except it saves the output, instead of
+	 * running the request repeatedly.
 	 * 
 	 * @see $multi
 	 * @return mixed
 	 */
 	public function fetch ()
 	{
-		if ( $this->multi )
+		if ( $this->multi ) {
 			return curl_multi_getcontent($this->ch);
-		else
-			return curl_exec($this->ch);
+		} else {
+			if ( $this->response ) {
+				return $this->response;
+			} else {
+				$this->response = curl_exec($this->ch);
+				return $this->response;
+			}
+		}
 	}
 	
+	/**
+	 * Fetch a JSON encoded value and return a JSON
+	 * object. Requires the PHP JSON functions. Pass TRUE
+	 * to return an associative array instead of an object.
+	 *
+	 * @param bool array optional. Return an array instead of an object.
+	 * @return mixed an array or object (possibly null).
+	 */
+	public function fetch_json ( $array = false )
+	{
+		return json_decode($this->fetch(), $array);
+	}
+
+
 	/**
 	 * Close the cURL session and free the resource.
 	 */
