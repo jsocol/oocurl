@@ -290,11 +290,11 @@ class Curl
 		}
 		
 		if ( is_int($opt) || ctype_digit($opt) ) {
-			return curl_getinfo($opt);
+			return curl_getinfo($this->ch,$opt);
 		}
 		
 		if (constant('CURLINFO_'.strtoupper($opt))) {
-			return curl_getinfo('CURLINFO_'.strtoupper($opt));
+			return curl_getinfo($this->ch,'CURLINFO_'.strtoupper($opt));
 		}
 	}
 	
