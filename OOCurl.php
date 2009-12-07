@@ -294,7 +294,7 @@ class Curl
 		}
 		
 		if (constant('CURLINFO_'.strtoupper($opt))) {
-			return curl_getinfo($this->ch,'CURLINFO_'.strtoupper($opt));
+			return curl_getinfo($this->ch,constant('CURLINFO_'.strtoupper($opt)));
 		}
 	}
 	
