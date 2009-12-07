@@ -7,7 +7,7 @@
  *
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
- * @version 0.2
+ * @version 0.2.1
  * @copyright Copyright (c) 2008, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
@@ -70,7 +70,7 @@ THE SOFTWARE.
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
  * @version 0.1.1
- * @copyright Copyright (c) 2008, James Socol
+ * @copyright Copyright (c) 2008-9, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
 class Curl
@@ -452,13 +452,11 @@ class Curl
  * printf("Microsoft is %n characters.\n", strlen($a->fetch()));
  * </code>
  *
- * @todo Still needs...
- *       - exec() function.
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
  * @version 0.1.0
  * @since 0.1.2
- * @copyright Copyright (c) 2008, James Socol
+ * @copyright Copyright (c) 2008-9, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
 class CurlParallel
@@ -581,4 +579,4 @@ class CurlParallel
 		}
 	}
 }
-?>
+
