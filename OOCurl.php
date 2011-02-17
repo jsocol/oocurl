@@ -1,13 +1,13 @@
 <?php
 /**
  * OOCurl
- * 
+ *
  * Provides an Object-Oriented interface to the PHP cURL
  * functions and clean up some of the curl_setopt() calls.
  *
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
- * @version 0.2.1
+ * @version 0.3.0
  * @copyright Copyright (c) 2008, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
@@ -32,9 +32,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 */
- 
+
 /**
- * Curl connection object 
+ * Curl connection object
  *
  * Provides an Object-Oriented interface to the PHP cURL
  * functions and a clean way to replace curl_setopt().
@@ -46,22 +46,22 @@ THE SOFTWARE.
  *
  * For example, if you wanted to include the headers in the output,
  * the old way would be
- * 
+ *
  * <code>
  * curl_setopt($ch, CURLOPT_HEADER, true);
  * </code>
- * 
+ *
  * But with this object, it's simply
- * 
+ *
  * <code>
  * $ch->header = true;
  * </code>
- * 
- * <b>NB:</b> Since, in my experience, the vast majority 
+ *
+ * <b>NB:</b> Since, in my experience, the vast majority
  * of cURL scripts set CURLOPT_RETURNTRANSFER to true, the {@link Curl}
- * class sets it by default. If you do not want CURLOPT_RETURNTRANSFER, 
+ * class sets it by default. If you do not want CURLOPT_RETURNTRANSFER,
  * you'll need to do this:
- * 
+ *
  * <code>
  * $c = new Curl;
  * $c->returntransfer = false;
@@ -69,7 +69,7 @@ THE SOFTWARE.
  *
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
- * @version 0.1.1
+ * @version 0.3.0
  * @copyright Copyright (c) 2008-9, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
  */
@@ -83,24 +83,24 @@ class Curl
 
 	/**
 	 * Store the CURLOPT_* values.
-	 * 
-	 * Do not access directly. Access is through {@link __get()} 
+	 *
+	 * Do not access directly. Access is through {@link __get()}
 	 * and {@link __set()} magic methods.
-	 * 
+	 *
 	 * @var array
 	 */
 	protected $curlopt = array();
-	
+
 	/**
 	 * Flag the Curl object as linked to a {@link CurlParallel}
 	 * object.
-	 * 
+	 *
 	 * @var bool
 	 */
 	protected $multi = false;
-	
+
 	/**
-	 * Store the response. Used with {@link fetch()} and 
+	 * Store the response. Used with {@link fetch()} and
 	 * {@link fetch_json()}.
 	 *
 	 * @var string
@@ -112,7 +112,7 @@ class Curl
 	 * @var string
 	 */
 	const VERSION = '0.3';
-	
+
 	/**
 	 * Create the new {@link Curl} object, with the
 	 * optional URL parameter.
@@ -124,23 +124,23 @@ class Curl
 	public function __construct ( $url = NULL )
 	{
 		// Make sure the cURL extension is loaded
-		if ( !extension_loaded('curl') ) 
+		if ( !extension_loaded('curl') )
 			throw new ErrorException("cURL library is not loaded. Please recompile PHP with the cURL library.");
-		
+
 		// Create the cURL resource
 		$this->ch = curl_init();
-		
+
 		// Set some default options
 		$this->url = $url;
 		$this->returntransfer = true;
-		
+
 		// Applications can override this User Agent value
 		$this->useragent = 'OOCurl '.self::VERSION;
-		
+
 		// Return $this for chaining
 		return $this;
 	}
-	
+
 	/**
 	 * When destroying the object, be sure to free resources.
 	 */
@@ -148,13 +148,13 @@ class Curl
 	{
 		$this->close();
 	}
-	
+
 	/**
 	 * If the session was closed with {@link Curl::close()}, it can be reopened.
-	 * 
+	 *
 	 * This does not re-execute {@link Curl::__construct()}, but will reset all
 	 * the values in {@link $curlopt}.
-	 * 
+	 *
 	 * @param string $url The URL to open (optional)
 	 * @return bool|Curl
 	 */
@@ -162,22 +162,22 @@ class Curl
 	{
 		// If it's still init'ed, return false.
 		if ( $this->ch ) return false;
-		
+
 		// init a new cURL session
 		$this->ch = curl_init();
-		
+
 		// reset all the values that were already set
 		foreach ( $this->curlopt as $const => $value ) {
 			curl_setopt($this->ch, constant($const), $value);
 		}
-		
+
 		// finally if there's a new URL, set that
 		if ( !empty($url) ) $this->url = $url;
-		
+
 		// return $this for chaining
 		return $this;
 	}
-	
+
 	/**
 	 * Execute the cURL transfer.
 	 *
@@ -187,14 +187,14 @@ class Curl
 	{
 		return curl_exec($this->ch);
 	}
-	
+
 	/**
 	 * If the Curl object was added to a {@link CurlParallel}
 	 * object, then you can use this function to get the
 	 * returned data (whatever that is). Otherwise it's similar
 	 * to {@link exec()} except it saves the output, instead of
 	 * running the request repeatedly.
-	 * 
+	 *
 	 * @see $multi
 	 * @return mixed
 	 */
@@ -211,7 +211,7 @@ class Curl
 			}
 		}
 	}
-	
+
 	/**
 	 * Fetch a JSON encoded value and return a JSON
 	 * object. Requires the PHP JSON functions. Pass TRUE
@@ -233,7 +233,7 @@ class Curl
 	{
 		curl_close($this->ch);
 	}
-	
+
 	/**
 	 * Return an error string from the last execute (if any).
 	 *
@@ -243,7 +243,7 @@ class Curl
 	{
 		return curl_error($this->ch);
 	}
-	
+
 	/**
 	 * Return the error number from the last execute (if any).
 	 *
@@ -253,33 +253,33 @@ class Curl
 	{
 		return curl_errno($this->ch);
 	}
-	
+
 	/**
 	 * Get cURL version information (and adds OOCurl version info)
-	 * 
+	 *
 	 * @return array
 	 */
  	public function version ()
  	{
  		$version = curl_version();
- 		
+
  		$version['oocurl_version'] = self::VERSION;
  		$version['oocurlparallel_version'] = CurlParallel::VERSION;
- 		
+
  		return $version;
  	}
-	
+
 	/**
 	 * Get information about this transfer.
-	 * 
+	 *
 	 * Accepts any of the following as a parameter:
 	 *  - Nothing, and returns an array of all info values
 	 *  - A CURLINFO_* constant, and returns a string
 	 *  - A string of the second half of a CURLINFO_* constant,
 	 *     for example, the string 'effective_url' is equivalent
-	 *     to the CURLINFO_EFFECTIVE_URL constant. Not case 
+	 *     to the CURLINFO_EFFECTIVE_URL constant. Not case
 	 *     sensitive.
-	 * 
+	 *
 	 * @param mixed $opt A string or constant (optional).
 	 * @return mixed An array or string.
 	 */
@@ -288,16 +288,16 @@ class Curl
 		if (false === $opt) {
 			return curl_getinfo($this->ch);
 		}
-		
+
 		if ( is_int($opt) || ctype_digit($opt) ) {
 			return curl_getinfo($this->ch,$opt);
 		}
-		
+
 		if (constant('CURLINFO_'.strtoupper($opt))) {
 			return curl_getinfo($this->ch,constant('CURLINFO_'.strtoupper($opt)));
 		}
 	}
-	
+
 	/**
 	 * Magic property setter.
 	 *
@@ -305,12 +305,12 @@ class Curl
 	 * constant CURLOPT_$opt exists, then we try to set
 	 * the option using curl_setopt() and return its
 	 * success. If it doesn't exist, just return false.
-	 * 
+	 *
 	 * Also stores the variable in {@link $curlopt} so
 	 * its value can be retrieved with {@link __get()}.
 	 *
 	 * @param string $opt The second half of the CURLOPT_* constant, not case sensitive
-	 * @param mixed $value 
+	 * @param mixed $value
 	 * @return void
 	 */
 	public function __set ( $opt, $value )
@@ -324,14 +324,14 @@ class Curl
 			}
 		}
 	}
-	
+
 	/**
 	 * Magic property getter.
-	 * 
+	 *
 	 * When options are set with {@link __set()}, they
 	 * are also stored in {@link $curlopt} so that we
 	 * can always find out what the options are now.
-	 * 
+	 *
 	 * The default cURL functions lack this ability.
 	 *
 	 * @param string $opt The second half of the CURLOPT_* constant, not case sensitive
@@ -341,7 +341,7 @@ class Curl
 	{
 		return $this->curlopt['CURLOPT_'.strtoupper($opt)];
 	}
-	
+
 	/**
 	 * Magic property isset()
 	 *
@@ -359,7 +359,7 @@ class Curl
 	{
 		return isset($this->curlopt['CURLOPT_'.strtoupper($opt)]);
 	}
-	
+
 	/**
 	 * Magic property unset()
 	 *
@@ -381,10 +381,10 @@ class Curl
 		// default value without knowing the default value,
 		// just do nothing.
 	}
-	
+
 	/**
 	 * Grants access to {@link Curl::$ch $ch} to a {@link CurlParallel} object.
-	 * 
+	 *
 	 * @param CurlParallel $mh The CurlParallel object that needs {@link Curl::$ch $ch}.
 	 */
 	public function grant ( CurlParallel $mh )
@@ -392,10 +392,10 @@ class Curl
 		$mh->accept($this->ch);
 		$this->multi = true;
 	}
-	
+
 	/**
 	 * Removes access to {@link Curl::$ch $ch} from a {@link CurlParallel} object.
-	 * 
+	 *
 	 * @param CurlParallel $mh The CurlParallel object that no longer needs {@link Curl::$ch $ch}.
 	 */
 	public function revoke ( CurlParallel $mh )
@@ -407,54 +407,54 @@ class Curl
 
 /**
  * Implements parallel-processing for cURL requests.
- * 
+ *
  * The PHP cURL library allows two or more requests to run in
  * parallel (at the same time). If you have multiple requests
  * that may have high latency but can then be processed quickly
  * in series (one after the other), then running them at the
  * same time may save time, overall.
- * 
+ *
  * You must create individual {@link Curl} objects first, add them to
  * the CurlParallel object, execute the CurlParallel object,
  * then get the data from the individual {@link Curl} objects. (Yes,
  * it's annoying, but it's limited by the PHP cURL library.)
- * 
+ *
  * For example:
- * 
+ *
  * <code>
  * $a = new Curl("http://www.yahoo.com/");
  * $b = new Curl("http://www.microsoft.com/");
- * 
+ *
  * $m = new CurlParallel($a, $b);
- * 
+ *
  * $m->exec(); // Now we play the waiting game.
- * 
+ *
  * printf("Yahoo is %n characters.\n", strlen($a->fetch()));
  * printf("Microsoft is %n characters.\n", strlen($a->fetch()));
  * </code>
- * 
- * You can add any number of {@link Curl} objects to the 
+ *
+ * You can add any number of {@link Curl} objects to the
  * CurlParallel object's constructor (including 0), or you
  * can add with the {@link add()} method:
- * 
+ *
  * <code>
  * $m = new CurlParallel;
- * 
+ *
  * $a = new Curl("http://www.yahoo.com/");
  * $b = new Curl("http://www.microsoft.com/");
- * 
+ *
  * $m->add($a);
  * $m->add($b);
- * 
+ *
  * $m->exec(); // Now we play the waiting game.
- * 
+ *
  * printf("Yahoo is %n characters.\n", strlen($a->fetch()));
  * printf("Microsoft is %n characters.\n", strlen($a->fetch()));
  * </code>
  *
  * @package OOCurl
  * @author James Socol <me@jamessocol.com>
- * @version 0.1.0
+ * @version 0.3.0
  * @since 0.1.2
  * @copyright Copyright (c) 2008-9, James Socol
  * @license http://www.opensource.org/licenses/mit-license.php
@@ -466,22 +466,22 @@ class CurlParallel
 	 * @var resource
 	 */
 	protected $mh;
-	
+
 	/**
 	 * Store the resource handles that were
 	 * added to the session.
 	 * @var array
 	 */
 	protected $ch = array();
-	
+
 	/**
 	 * Store the version number of this class.
 	 */
-	const VERSION = '0.1.0';
-	
+	const VERSION = '0.3.0';
+
 	/**
 	 * Initialize the multisession handler.
-	 * 
+	 *
 	 * @uses add()
 	 * @param Curl $curl,... {@link Curl} objects to add to the Parallelizer.
 	 * @return CurlParallel
@@ -489,14 +489,14 @@ class CurlParallel
 	public function __construct ()
 	{
 		$this->mh = curl_multi_init();
-		
+
 		foreach ( func_get_args() as $ch ) {
 			$this->add($ch);
 		}
-		
+
 		return $this;
 	}
-	
+
 	/**
 	 * On destruction, frees resources.
 	 */
@@ -504,7 +504,7 @@ class CurlParallel
 	{
 		$this->close();
 	}
-	
+
 	/**
 	 * Close the current session and free resources.
 	 */
@@ -515,12 +515,12 @@ class CurlParallel
 		}
 		curl_multi_close($this->mh);
 	}
-	
+
 	/**
 	 * Add a {@link Curl} object to the Parallelizer.
-	 * 
+	 *
 	 * Will throw a catchable fatal error if passed a non-Curl object.
-	 * 
+	 *
 	 * @uses Curl::grant()
 	 * @uses CurlParallel::accept()
 	 * @param Curl $ch Curl object.
@@ -530,7 +530,7 @@ class CurlParallel
 		// get the protected resource
 		$ch->grant($this);
 	}
-	
+
 	/**
 	 * Remove a {@link Curl} object from the Parallelizer.
 	 *
@@ -542,7 +542,7 @@ class CurlParallel
 	{
 		$ch->revoke($this);
 	}
-	
+
 	/**
 	 * Execute the parallel cURL requests.
 	 */
@@ -552,11 +552,11 @@ class CurlParallel
 			curl_multi_exec($this->mh, $running);
 		} while ($running > 0);
 	}
-	
+
 	/**
 	 * Accept a resource handle from a {@link Curl} object and
 	 * add it to the master.
-	 * 
+	 *
 	 * @param resource $ch A resource returned by curl_init().
 	 */
 	public function accept ( $ch )
@@ -564,11 +564,11 @@ class CurlParallel
 		$this->ch[] = $ch;
 		curl_multi_add_handle($this->mh, $ch);
 	}
-	
+
 	/**
 	 * Accept a resource handle from a {@link Curl} object and
 	 * remove it from the master.
-	 * 
+	 *
 	 * @param resource $ch A resource returned by curl_init().
 	 */
 	public function release ( $ch )
