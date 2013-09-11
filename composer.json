@@ -4,7 +4,7 @@
     "description": "LoggingOOCurl is an object-oriented wrapper around PHP's cURL bindings. The goal was to provide an interface that felt more natural in modern, OO PHP.",
     "keywords": ["curl"],
     "homepage": "https://github.com/jsocol/oocurl",
-    "license": "MIT/X11",
+    "license": "MIT",
     "authors": [
         {
             "name": "JordiJames Socol",
@@ -18,10 +18,5 @@
     },
     "autoload": {
         "classmap": ["OOCurl.php"]
-    },
-    "extra": {
-        "branch-alias": {
-            "master": "0.3.0"
-        }
     }
 }
